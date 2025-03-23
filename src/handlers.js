@@ -2,7 +2,6 @@ let { Bookshelf } = require("./bookshelf")
 const { nanoid } = require("nanoid")
 
 const addBook = (request, h) => {
-
      const {
           name,
           year,
@@ -54,8 +53,7 @@ const addBook = (request, h) => {
           console.debug("Book created, ID initialized")
 
           Bookshelf.push(book)
-          console.info("Book successfully pushed")
-          console.log(Bookshelf)
+          console.info("Book successfully pushed \n")
 
           return h.response({
                status: "success",
@@ -67,7 +65,7 @@ const addBook = (request, h) => {
 
      } catch (err) {
 
-          console.error(`Failed at ${err.at}, message: ${err.message}`)
+          console.error(`Failed at ${err.at}, message: ${err.message}\n`)
 
           return h.response({
                status: err.status,
@@ -77,4 +75,97 @@ const addBook = (request, h) => {
      }
 }
 
-module.exports = { addBook }
+const getBook = (request, h) => {
+     let filteredBooks = Bookshelf
+
+     const {
+          reading,
+          finished,
+          name,
+     } = request.query
+
+     console.debug("Book data returned")
+     console.log(filteredBooks)
+
+     if (reading === "1" || reading === "0") {
+          const readingValue = reading === "1";
+      
+          filteredBooks = filteredBooks.filter((item) => item.reading === readingValue);
+      
+          console.debug("Book filtered by reading");
+      }
+
+     if (finished === "1" || finished === "0") {
+          const finishedValue = finished === "1";
+      
+          filteredBooks = filteredBooks.filter((item) => item.finished === finishedValue);
+      
+          console.debug("Book filtered by finished");
+      }
+
+     if(name) {
+          const searchQuery = name.toLowerCase()
+
+          filteredBooks = filteredBooks.filter((item) => {
+               return item.name.toLowerCase().includes(searchQuery)
+          })
+          console.debug("Book filtered by name")
+     }
+
+     let books = []
+
+     filteredBooks.forEach((item) => {
+          books.push({
+               id: item.id,
+               name: item.name,
+               publisher: item.publisher
+          })
+     })
+
+     console.log("Return successfull \n")
+     return h.response({
+          status: "success",
+          data: {
+               books: books
+          }
+     })
+}
+
+const getBookById = (request, h) => {
+     const { bookId } = request.params
+
+     console.log(Bookshelf)
+
+     try {
+          const searchedBook = Bookshelf.find((book) => {
+               return book.id == bookId
+          })
+          console.debug("Book searched")
+
+          if (!searchedBook) {
+               throw {
+                    status: "fail",
+                    message: "Buku tidak ditemukan",
+                    code: 404,
+                    at: "search"
+               }
+          }
+
+          return h.response({
+               status: "success",
+               data: {
+                    book: searchedBook
+               }
+          }).code(200)
+
+     } catch (err) {
+          console.error(`Failed at ${err.at}, message: ${err.message}\n`)
+
+          return h.response({
+               status: err.status,
+               message: err.message,
+          }).code(err.code)
+     }
+}
+
+module.exports = { addBook, getBook, getBookById }
